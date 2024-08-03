@@ -7,10 +7,6 @@ then
     exit
 fi
 
-# clone the repository
-git clone https://github.com/yourusername/sigcrack.git
-cd sigcrack
-
 # build the project
 cargo build --release
 
