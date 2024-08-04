@@ -2,11 +2,15 @@ use anyhow::{Context, Result};
 use tiny_keccak::{Hasher, Keccak};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Instant;
+use std::time::{Instant, Duration};
+use std::thread;
 use crate::output_handler::{start_output_thread, print_found_signature};
 
 // define character set for function names
 const CHARSET: &[u8] = b"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+// define parameter types to loop through
+const PARAM_TYPES: &[&str] = &["uint256", "address", "bool", "bytes", "string", ""];
 
 pub struct CollisionFinder;
 
@@ -120,10 +124,16 @@ impl CollisionFinder {
             let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
                 .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
 
-            let candidate = format!("{}()", function_name);
+            for param_type in PARAM_TYPES {
+                let candidate = if param_type.is_empty() {
+                    format!("{}()", function_name)
+                } else {
+                    format!("{}({})", function_name, param_type)
+                };
 
-            if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                return Ok(());
+                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    return Ok(());
+                }
             }
 
             if !self.increment_buffer(&mut buffer) {
@@ -181,10 +191,16 @@ impl CollisionFinder {
             let function_name = String::from_utf8(buffer.clone())
                 .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
 
-            let candidate = format!("{}()", function_name);
+            for param_type in PARAM_TYPES {
+                let candidate = if param_type.is_empty() {
+                    format!("{}()", function_name)
+                } else {
+                    format!("{}({})", function_name, param_type)
+                };
 
-            if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                return Ok(());
+                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    return Ok(());
+                }
             }
 
             if !self.increment_buffer(&mut buffer) {
