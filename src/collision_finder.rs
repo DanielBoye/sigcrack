@@ -3,6 +3,7 @@ use tiny_keccak::{Hasher, Keccak};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+use rayon::prelude::*;
 use crate::output_handler::{start_output_thread, print_found_signature};
 
 // define character set for function names
@@ -86,24 +87,26 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix and suffix)", length);
-        let mut buffer = vec![CHARSET[0]; length];
-
-        loop {
-            let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
-                .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
-
-            let candidate = format!("{}{}", function_name, suffix);
-
-            if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                return Ok(());
+        
+        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+            let mut buffer = vec![CHARSET[i]];
+            buffer.resize(length, CHARSET[0]);
+            
+            loop {
+                let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
+                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
+                let candidate = format!("{}{}", function_name, suffix);
+                
+                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    return Ok(());
+                }
+                
+                if !self.increment_buffer(&mut buffer) {
+                    break;
+                }
             }
-
-            if !self.increment_buffer(&mut buffer) {
-                break;
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     // search with prefix only
@@ -117,30 +120,33 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix)", length);
-        let mut buffer = vec![CHARSET[0]; length];
-
-        loop {
-            let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
-                .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
-
-            for param_type in PARAM_TYPES {
-                let candidate = if param_type.is_empty() {
-                    format!("{}()", function_name)
-                } else {
-                    format!("{}({})", function_name, param_type)
-                };
-
-                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                    return Ok(());
+        
+        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+            let mut buffer = vec![CHARSET[i]];
+            buffer.resize(length, CHARSET[0]);
+            
+            loop {
+                let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
+                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
+                
+                for param_type in PARAM_TYPES {
+                    let candidate = if param_type.is_empty() {
+                        format!("{}()", function_name)
+                    } else {
+                        format!("{}({})", function_name, param_type)
+                    };
+                    
+                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                        return Ok(());
+                    }
+                }
+                
+                if !self.increment_buffer(&mut buffer) {
+                    break;
                 }
             }
-
-            if !self.increment_buffer(&mut buffer) {
-                break;
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     // search with suffix only
@@ -154,24 +160,26 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including suffix)", length);
-        let mut buffer = vec![CHARSET[0]; length];
-
-        loop {
-            let function_name = String::from_utf8(buffer.clone())
-                .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
-
-            let candidate = format!("{}{}", function_name, suffix);
-
-            if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                return Ok(());
+        
+        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+            let mut buffer = vec![CHARSET[i]];
+            buffer.resize(length, CHARSET[0]);
+            
+            loop {
+                let function_name = String::from_utf8(buffer.clone())
+                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
+                let candidate = format!("{}{}", function_name, suffix);
+                
+                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    return Ok(());
+                }
+                
+                if !self.increment_buffer(&mut buffer) {
+                    break;
+                }
             }
-
-            if !self.increment_buffer(&mut buffer) {
-                break;
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     // search without prefix or suffix
@@ -184,30 +192,33 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters", length);
-        let mut buffer = vec![CHARSET[0]; length];
-
-        loop {
-            let function_name = String::from_utf8(buffer.clone())
-                .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
-
-            for param_type in PARAM_TYPES {
-                let candidate = if param_type.is_empty() {
-                    format!("{}()", function_name)
-                } else {
-                    format!("{}({})", function_name, param_type)
-                };
-
-                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                    return Ok(());
+        
+        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+            let mut buffer = vec![CHARSET[i]];
+            buffer.resize(length, CHARSET[0]);
+            
+            loop {
+                let function_name = String::from_utf8(buffer.clone())
+                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
+                
+                for param_type in PARAM_TYPES {
+                    let candidate = if param_type.is_empty() {
+                        format!("{}()", function_name)
+                    } else {
+                        format!("{}({})", function_name, param_type)
+                    };
+                    
+                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                        return Ok(());
+                    }
+                }
+                
+                if !self.increment_buffer(&mut buffer) {
+                    break;
                 }
             }
-
-            if !self.increment_buffer(&mut buffer) {
-                break;
-            }
-        }
-
-        Ok(())
+            Ok(())
+        })
     }
 
     // check if the hash matches the target
