@@ -2,8 +2,7 @@ use anyhow::{Context, Result};
 use tiny_keccak::{Hasher, Keccak};
 use std::sync::{Arc, Mutex};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::{Instant, Duration};
-use std::thread;
+use std::time::Instant;
 use crate::output_handler::{start_output_thread, print_found_signature};
 
 // define character set for function names
