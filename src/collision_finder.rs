@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use tiny_keccak::{Hasher, Keccak};
 use std::sync::{Arc, Mutex};
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, AtomicBool, Ordering};
 use std::time::Instant;
 use rayon::prelude::*;
 use crate::output_handler::{start_output_thread, print_found_signature};
@@ -30,6 +30,7 @@ impl CollisionFinder {
         let target_hash = target_hash.to_vec();
         let guess_counter = Arc::new(AtomicUsize::new(0));
         let latest_function_guess = Arc::new(Mutex::new(String::new()));
+        let found_flag = Arc::new(AtomicBool::new(false));
         let start_time = Instant::now();
 
         // start output thread for progress reporting
@@ -37,13 +38,13 @@ impl CollisionFinder {
 
         // choose appropriate search method based on input
         if !prefix.is_empty() && suffix.is_some() {
-            self.find_with_prefix_and_suffix(&target_hash, prefix, length, suffix.unwrap(), &guess_counter, &latest_function_guess, start_time)
+            self.find_with_prefix_and_suffix(&target_hash, prefix, length, suffix.unwrap(), &guess_counter, &latest_function_guess, &found_flag, start_time)
         } else if !prefix.is_empty() {
-            self.find_with_prefix(&target_hash, prefix, length, &guess_counter, &latest_function_guess, start_time)
+            self.find_with_prefix(&target_hash, prefix, length, &guess_counter, &latest_function_guess, &found_flag, start_time)
         } else if suffix.is_some() {
-            self.find_with_suffix(&target_hash, length, suffix.unwrap(), &guess_counter, &latest_function_guess, start_time)
+            self.find_with_suffix(&target_hash, length, suffix.unwrap(), &guess_counter, &latest_function_guess, &found_flag, start_time)
         } else {
-            self.find_without_prefix_and_suffix(&target_hash, length, &guess_counter, &latest_function_guess, start_time)
+            self.find_without_prefix_and_suffix(&target_hash, length, &guess_counter, &latest_function_guess, &found_flag, start_time)
         }
     }
 
@@ -84,6 +85,7 @@ impl CollisionFinder {
         suffix: &str,
         guess_counter: &Arc<AtomicUsize>,
         latest_function_guess: &Arc<Mutex<String>>,
+        found_flag: &Arc<AtomicBool>,
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix and suffix)", length);
@@ -93,11 +95,17 @@ impl CollisionFinder {
             buffer.resize(length, CHARSET[0]);
             
             loop {
+                if found_flag.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+
                 let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
                     .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
                 let candidate = format!("{}{}", function_name, suffix);
+
+                // println!("Generated function name: {}", candidate);
                 
-                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, found_flag, start_time)? {
                     return Ok(());
                 }
                 
@@ -117,6 +125,7 @@ impl CollisionFinder {
         length: usize,
         guess_counter: &Arc<AtomicUsize>,
         latest_function_guess: &Arc<Mutex<String>>,
+        found_flag: &Arc<AtomicBool>,
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix)", length);
@@ -126,6 +135,10 @@ impl CollisionFinder {
             buffer.resize(length, CHARSET[0]);
             
             loop {
+                if found_flag.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+
                 let function_name = format!("{}{}", prefix, String::from_utf8(buffer.clone())
                     .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?);
                 
@@ -135,8 +148,11 @@ impl CollisionFinder {
                     } else {
                         format!("{}({})", function_name, param_type)
                     };
+
+                    // println!("Generated function name: {}", candidate);
+
                     
-                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, found_flag, start_time)? {
                         return Ok(());
                     }
                 }
@@ -157,30 +173,50 @@ impl CollisionFinder {
         suffix: &str,
         guess_counter: &Arc<AtomicUsize>,
         latest_function_guess: &Arc<Mutex<String>>,
+        found_flag: &Arc<AtomicBool>,
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including suffix)", length);
-        
-        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
-            let mut buffer = vec![CHARSET[i]];
-            buffer.resize(length, CHARSET[0]);
-            
-            loop {
-                let function_name = String::from_utf8(buffer.clone())
-                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
-                let candidate = format!("{}{}", function_name, suffix);
-                
-                if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
-                    return Ok(());
-                }
-                
-                if !self.increment_buffer(&mut buffer) {
-                    break;
-                }
+    
+        rayon::scope(|s| {
+            for i in 0..CHARSET.len() {
+                let guess_counter = Arc::clone(guess_counter);
+                let latest_function_guess = Arc::clone(latest_function_guess);
+                let found_flag = Arc::clone(found_flag);
+                let target_hash = target_hash.to_vec();
+                let suffix = suffix.to_string();
+                let start_time = start_time.clone();
+    
+                s.spawn(move |_| {
+                    let mut buffer = vec![CHARSET[0]; length];
+    
+                    loop {
+                        if found_flag.load(Ordering::Relaxed) {
+                            return;
+                        }
+    
+                        let function_name = String::from_utf8(buffer.clone())
+                            .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))
+                            .unwrap();
+                        let candidate = format!("{}{}", function_name, suffix);
+    
+                        // println!("Generated function name: {}", candidate);
+    
+                        if self.check_hash(&candidate, &target_hash, &guess_counter, &latest_function_guess, &found_flag, start_time).unwrap() {
+                            return;
+                        }
+    
+                        if !self.increment_buffer(&mut buffer) {
+                            break;
+                        }
+                    }
+                });
             }
-            Ok(())
-        })
+        });
+    
+        Ok(())
     }
+    
 
     // search without prefix or suffix
     fn find_without_prefix_and_suffix(
@@ -189,6 +225,7 @@ impl CollisionFinder {
         length: usize,
         guess_counter: &Arc<AtomicUsize>,
         latest_function_guess: &Arc<Mutex<String>>,
+        found_flag: &Arc<AtomicBool>,
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters", length);
@@ -198,6 +235,10 @@ impl CollisionFinder {
             buffer.resize(length, CHARSET[0]);
             
             loop {
+                if found_flag.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+
                 let function_name = String::from_utf8(buffer.clone())
                     .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
                 
@@ -207,8 +248,11 @@ impl CollisionFinder {
                     } else {
                         format!("{}({})", function_name, param_type)
                     };
+
+                    // println!("Generated function name: {}", candidate);
+
                     
-                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, start_time)? {
+                    if self.check_hash(&candidate, target_hash, guess_counter, latest_function_guess, found_flag, start_time)? {
                         return Ok(());
                     }
                 }
@@ -228,6 +272,7 @@ impl CollisionFinder {
         target_hash: &[u8],
         guess_counter: &Arc<AtomicUsize>,
         latest_function_guess: &Arc<Mutex<String>>,
+        found_flag: &Arc<AtomicBool>,
         start_time: Instant,
     ) -> Result<bool> {
         let hash = self.keccak256(function_name);
@@ -237,6 +282,7 @@ impl CollisionFinder {
         *latest_function_guess.lock().unwrap() = function_name.to_string();
 
         if hash_prefix == target_hash {
+            found_flag.store(true, Ordering::Relaxed);
             print_found_signature(function_name, start_time, guess_counter);
             return Ok(true);
         }
