@@ -91,8 +91,7 @@ impl CollisionFinder {
         println!("Trying function names with {} characters (including prefix and suffix)", length);
         
         (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
-            let mut buffer = vec![CHARSET[i]];
-            buffer.resize(length, CHARSET[0]);
+            let mut buffer = vec![CHARSET[0]; length];
             
             loop {
                 if found_flag.load(Ordering::Relaxed) {
@@ -131,8 +130,7 @@ impl CollisionFinder {
         println!("Trying function names with {} characters (including prefix)", length);
         
         (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
-            let mut buffer = vec![CHARSET[i]];
-            buffer.resize(length, CHARSET[0]);
+            let mut buffer = vec![CHARSET[0]; length];
             
             loop {
                 if found_flag.load(Ordering::Relaxed) {
@@ -231,8 +229,7 @@ impl CollisionFinder {
         println!("Trying function names with {} characters", length);
         
         (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
-            let mut buffer = vec![CHARSET[i]];
-            buffer.resize(length, CHARSET[0]);
+            let mut buffer = vec![CHARSET[0]; length];
             
             loop {
                 if found_flag.load(Ordering::Relaxed) {
