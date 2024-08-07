@@ -89,8 +89,8 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix and suffix)", length);
-        
-        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+
+        (0..CHARSET.len()).into_par_iter().try_for_each(|_| {
             let mut buffer = vec![CHARSET[0]; length];
             
             loop {
@@ -128,10 +128,9 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including prefix)", length);
-        
-        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+
+        (0..CHARSET.len()).into_par_iter().try_for_each(|_| {
             let mut buffer = vec![CHARSET[0]; length];
-            
             loop {
                 if found_flag.load(Ordering::Relaxed) {
                     return Ok(());
@@ -175,46 +174,29 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters (including suffix)", length);
-    
-        rayon::scope(|s| {
-            for i in 0..CHARSET.len() {
-                let guess_counter = Arc::clone(guess_counter);
-                let latest_function_guess = Arc::clone(latest_function_guess);
-                let found_flag = Arc::clone(found_flag);
-                let target_hash = target_hash.to_vec();
-                let suffix = suffix.to_string();
-                let start_time = start_time.clone();
-    
-                s.spawn(move |_| {
-                    let mut buffer = vec![CHARSET[0]; length];
-    
-                    loop {
-                        if found_flag.load(Ordering::Relaxed) {
-                            return;
-                        }
-    
-                        let function_name = String::from_utf8(buffer.clone())
-                            .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))
-                            .unwrap();
-                        let candidate = format!("{}{}", function_name, suffix);
-    
-                        // println!("Generated function name: {}", candidate);
-    
-                        if self.check_hash(&candidate, &target_hash, &guess_counter, &latest_function_guess, &found_flag, start_time).unwrap() {
-                            return;
-                        }
-    
-                        if !self.increment_buffer(&mut buffer) {
-                            break;
-                        }
-                    }
-                });
+
+        (0..CHARSET.len()).into_par_iter().try_for_each(|_| {
+            let mut buffer = vec![CHARSET[0]; length];
+            loop {
+                if found_flag.load(Ordering::Relaxed) {
+                    return Ok(());
+                }
+
+                let function_name = String::from_utf8(buffer.clone())
+                    .with_context(|| format!("Failed to create UTF-8 string from buffer: {:?}", buffer))?;
+                let candidate = format!("{}{}", function_name, suffix);
+
+                if self.check_hash(&candidate, &target_hash, guess_counter, latest_function_guess, found_flag, start_time)? {
+                    return Ok(());
+                }
+
+                if !self.increment_buffer(&mut buffer) {
+                    break;
+                }
             }
-        });
-    
-        Ok(())
+            Ok(())
+        })
     }
-    
 
     // search without prefix or suffix
     fn find_without_prefix_and_suffix(
@@ -227,8 +209,8 @@ impl CollisionFinder {
         start_time: Instant,
     ) -> Result<()> {
         println!("Trying function names with {} characters", length);
-        
-        (0..CHARSET.len()).into_par_iter().try_for_each(|i| {
+
+        (0..CHARSET.len()).into_par_iter().try_for_each(|_| {
             let mut buffer = vec![CHARSET[0]; length];
             
             loop {
