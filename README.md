@@ -2,13 +2,14 @@
 
 sigcrack is a Rust-based tool designed to find Solidity function signature collisions. This tool is useful for colliding 4 byte Keccak256 hashes, particularly in the context of Ethereum smart contracts where function signatures can be collided through bruteforce. 
 
-## Install
+## Build
 
-To install sigcrack, simply run the following commands: 
-```
-git clone https://github.com/DanielBoye/sigcrack.git
-cd sigcrack
-./install.sh
+You need Rust and Cargo installed on your machine. See the installation guide
+[here](https://doc.rust-lang.org/cargo/getting-started/installation.html).
+
+Then clone the repo and install the CLI globally like this:
+```sh
+cargo install --path .
 ```
 
 ## Usage
@@ -87,11 +88,12 @@ This command combines prefix, suffix, and length constraints:
 - The tool will generate variations to fill the space between the prefix and suffix.
 - Useful when you want the start of a function and a spesific function parameter but need to find a valid signature.
 
-## Removal Script
-This command runs a script to remove sigcrack from your system
+## Uninstall
+To uninstall the program, simply run:
+```sh
+cargo uninstall sigcrack
 ```
-./remove.sh
-```
+
 ## Contributing
 Contributions are welcome! Please open an issue or submit a pull request with your improvements.
 
