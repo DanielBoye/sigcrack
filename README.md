@@ -1,6 +1,6 @@
 # sigcrack
 
-sigcrack is a Rust-based tool designed to find Solidity function signature collisions. This tool is useful for colliding 4 byte Keccak256 hashes, particularly in the context of Ethereum smart contracts where function signatures can be collided through bruteforce. 
+sigcrack is a Rust-based tool designed to find Solidity function signature collisions. This tool is useful for colliding 4-byte Keccak256 hashes, particularly in the context of Ethereum smart contracts where function signatures can collide through brute force. 
 
 ## Build
 
@@ -45,7 +45,7 @@ If no specific function parameters are provided, the tool will loop through the 
 ## Time Complexity and Expected Time
 The brute-force algorithm used in sigcrack has an overall time complexity similar to a normal brute-force attack, which can be expressed as:
 $$O(m \cdot n)$$
-However, for sigcrack, the time complexity is more specifically:
+However, for sigcrack, the time complexity is more specific:
 $$O(62^{(L - P - S)} \cdot C)$$
 Where:
 - $L$ is the total length of the function name,
@@ -68,10 +68,8 @@ To calculate the expected time:
 3. Expected time (in seconds): 
    $\text{Expected Time} = \frac{56,800,235,584}{4,400,000} \approx 12,909 \text{ seconds} \approx 3.6 \text{ hours}$
 
-For a 50% chance of finding a match, it will take: \[\text{Expected Time}_{50\%} = \frac{3.6 \text{ hours}}{2} \approx 1.8 \text{ hours}\]
 
-
-This means that on average it will take approximately 3 hours to guarantee finding a matching function signature. The actual time can vary depending on the length and constraints provided. Some searches may take around 10 minutes, while others may take up to 5 hours. In my experience, it usually takes around 45 minutes.
+This means that on average it will take approximately 3 hours to guarantee finding a matching function signature. The actual time can vary depending on the length and constraints provided. Some searches may take around 10 minutes, while others may take up to 5 hours. In my experience, it usually takes around 45 minutes or less.
 
 ## Custom length
 ```
@@ -103,7 +101,7 @@ This command adds a function parameter constraint:
 - All generated function names will end with the desired function parameter `(uint256)`.
 - The characters before the parameters will be filled with alphanumeric characters.
 - The total length of the function name will be 6 characters by default.
-- Useful when you want a spesific function parameter but need a valid signature.
+- Useful when you want a specific function parameter but need a valid signature.
 
 ## With Prefix and Function Parameters
 ```
@@ -116,7 +114,7 @@ This command combines prefix, suffix, and length constraints:
 - Useful when you want the start of a function and a specific function parameter but need to find a valid signature.
 
 ## Uninstall
-To uninstall the program, simply run:
+To uninstall the program, run:
 ```sh
 cargo uninstall sigcrack
 ```
@@ -128,4 +126,4 @@ Contributions are welcome! Open an issue or submit a pull request with your impr
 This project is licensed under the MIT License. See the LICENSE file for details.
 
 ## Contact
-For any questions or feedback, please take contact. Happy cracking!
+For any questions or feedback, please take contact or submit an issue in the repository. Happy cracking!
