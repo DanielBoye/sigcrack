@@ -63,13 +63,12 @@ In summary, the time complexity indicates that the number of combinations grows 
 
 Given a speed of approximately **4.4 MH/s**, the expected time to find a matching hash can be estimated based on the number of combinations generated. For example, if you are searching for function names of length 6 with no prefix or suffix, the total combinations would be $62^6$, which is $56,800,235,584$. 
 To calculate the expected time:
-1. Total combinations: $$62^6 \approx 56.8 \text{ billion}$$
-2. Speed: $$4.4 \text{ MH/s}$$
+1. Total combinations: \$$62^6 \approx 56.8 \text{ billion} $$\
+2. Speed: $4.4 \text{ MH/s}$
 3. Expected time (in seconds): 
-   $$ \text{Expected Time} = \frac{56,800,235,584}{4,400,000} \approx 12,909 \text{ seconds} \approx 3.6 \text{ hours} $$
+   $\text{Expected Time} = \frac{56,800,235,584}{4,400,000} \approx 12,909 \text{ seconds} \approx 3.6 \text{ hours}$
 
-For a 50% chance of finding a match it will take:
-$$ \text{Expected Time}_{50\%} = \frac{3.6 \text{ hours}}{2} \approx 1.8 \text{ hours} $$
+For a 50% chance of finding a match, it will take: \[\text{Expected Time}_{50\%} = \frac{3.6 \text{ hours}}{2} \approx 1.8 \text{ hours}\]
 
 
 This means that on average it will take approximately 3 hours to guarantee finding a matching function signature. The actual time can vary depending on the length and constraints provided. Some searches may take around 10 minutes, while others may take up to 5 hours. In my experience, it usually takes around 45 minutes.
