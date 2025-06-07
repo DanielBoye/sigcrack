@@ -2,6 +2,8 @@
 
 sigcrack is a Rust-based tool designed to find Solidity function signature collisions. This tool is useful for colliding 4-byte Keccak256 hashes, particularly in the context of Ethereum smart contracts where function signatures can collide through brute force. 
 
+<img src="https://media.discordapp.net/attachments/1216697810255089684/1374863718709465280/demo.gif?ex=6846029e&is=6844b11e&hm=6be3e8b6227b3b28581f68dd05aa4a62adc9133f6f1a709850d8bf05dc088a2e&=&width=913&height=613" alt="sigcrack demo" width="600"/>
+
 ## Build
 
 You need Rust and Cargo installed on your machine. See the installation guide
