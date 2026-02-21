@@ -1,0 +1,33 @@
+[package]
+name = "sigcrack"
+version = "0.1.0"
+edition = "2021"
+description = "Brute-force Solidity function selector collisions"
+license = "MIT"
+repository = "https://github.com/DanielBoye/sigcrack"
+keywords = ["ethereum", "solidity", "keccak256", "selector", "collision"]
+categories = ["command-line-utilities", "cryptography"]
+
+[[bin]]
+name = "sigcrack"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+ratatui = "0.29"
+crossterm = "0.28"
+tiny-keccak = { version = "2", features = ["keccak"] }
+keccak = "0.1"
+crossbeam-channel = "0.5"
+num_cpus = "1"
+wgpu = "24"
+pollster = "0.4"
+bytemuck = { version = "1", features = ["derive"] }
+
+[build-dependencies]
+cc = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
