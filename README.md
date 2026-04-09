@@ -83,15 +83,17 @@ Options:
 
 ## Time Complexity Analysis
 
-Solidity function selectors are the first 4 bytes of the Keccak256 hash of the function signature (e.g., `keccak256("transfer(address,uint256)")` yields `0xa9059cbb`). Since selectors are 4 bytes (32 bits), the total selector space is 2^32 = **4,294,967,296** possible values.
+Solidity function selectors are the first 4 bytes of the Keccak256 hash of the function signature (e.g., `keccak256("transfer(address,uint256)")` yields `0xa9059cbb`). Since selectors are 4 bytes (32 bits), the total selector space is $2^{32}$ = **4,294,967,296** possible values.
 
 ### Expected Hashes to First Collision
 
-By the birthday problem, the probability of finding a collision for a specific target selector after `n` random trials is:
+Model each hash as a uniform draw over the $2^{32}$ possible selectors. After $n$ hashes, the probability that **at least one** equals your target selector is one minus the chance of missing on every trial:
 
-```
-P(hit after n trials) = 1 - (1 - 1/2^32)^n
-```
+$$
+P(n) = 1 - \left(1 - \frac{1}{2^{32}}\right)^{n}
+$$
+
+where $n$ is the number of hashes. The next table inverts this: for a desired hit probability, how large must $n$ be?
 
 | Probability | Hashes Required |
 |-------------|-----------------|
@@ -101,7 +103,7 @@ P(hit after n trials) = 1 - (1 - 1/2^32)^n
 | 95%         | ~12.87 billion  |
 | 99%         | ~19.73 billion  |
 
-The **expected** number of hashes for a single collision is **2^32 = ~4.29 billion**.
+The **expected** number of hashes for a single collision is about $2^{32}$ (~4.29 billion).
 
 ### Estimated Wall Time
 
